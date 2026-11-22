@@ -3,6 +3,14 @@
   const { React, ReactNative: RN, FluxDispatcher } = metro.common;
   const { findByProps, findByStoreName } = metro;
   const h = React.createElement;
+  const mem = { eggs: 0, hint: null, lastHint: null };
+  const store = () => {
+    try {
+      const s = plugin && plugin.storage;
+      if (s && typeof s === "object") return s;
+    } catch (e) {}
+    return mem;
+  };
   const { Modal, View, Text, Pressable } = RN;
 
   const CHANCE = 0.04;      // random room chance per channel switch
@@ -175,7 +183,7 @@
     };
 
     const yes = () => {
-      const s = plugin.storage;
+      const s = store();
       const prev = s.hint ? s.hint.id : s.lastHint;
       const nh = pickHint(prev);
       s.eggs = (s.eggs || 0) + 1;
@@ -239,7 +247,7 @@
         } }, "\u2665"),
         h(Text, { style: {
           position: "absolute", top: 40, left: 16, color: "#444", fontFamily: MONO,
-        } }, "EGGS " + (plugin.storage.eggs || 0)),
+        } }, "EGGS " + (store().eggs || 0)),
         stage !== "walk" && h(View, { style: {
           position: "absolute", left: "5%", right: "5%", bottom: "6%",
           minHeight: 130, padding: 16, backgroundColor: "#000",
@@ -255,7 +263,7 @@
     if (open) return;
     open = true;
     lastShown = Date.now();
-    const first = !(plugin.storage.eggs > 0);
+    const first = !(store().eggs > 0);
     const el = h(Room, {
       palette: pickPalette(first),
       layout: first || Math.random() < 0.6 ? "straight" : "t",
@@ -286,7 +294,7 @@
       if (open || now - lastShown < COOLDOWN) return;
       const store = findByStoreName("ChannelStore");
       const channel = e && e.channelId && store ? store.getChannel(e.channelId) : null;
-      const hint = plugin.storage.hint;
+      const hint = store().hint;
       const trig = hint && TRIGGERS.find((t) => t.id === hint.id);
       const fired = trig && trig.test(channel, { rapid: recent.length });
       if (fired || Math.random() < CHANCE) setTimeout(showRoom, 350);
@@ -298,16 +306,18 @@
       h(Pressable, { onPress: fn, style: { padding: 14, margin: 8, backgroundColor: "#333", borderRadius: 8 } },
         h(Text, { style: { color: "#fff" } }, label));
     return h(View, { style: { padding: 8 } },
-      h(Text, { style: { color: "#fff", margin: 8 } }, "Eggs collected: " + (plugin.storage.eggs || 0)),
+      h(Text, { style: { color: "#fff", margin: 8 } }, "Eggs collected: " + (store().eggs || 0)),
       btn("Open the room now", showRoom),
-      btn("Reset eggs and hint", () => { plugin.storage.eggs = 0; plugin.storage.hint = null; }));
+      btn("Reset eggs and hint", () => { store().eggs = 0; store().hint = null; }));
   }
 
   return {
     onLoad() {
-      const s = plugin.storage;
-      if (typeof s.eggs !== "number") s.eggs = 0;
-      if (s.hint === undefined) s.hint = null;
+      try {
+        const s = store();
+        if (typeof s.eggs !== "number") s.eggs = 0;
+        if (s.hint === undefined) s.hint = null;
+      } catch (e) {}
       FluxDispatcher.subscribe("CHANNEL_SELECT", onSelect);
     },
     onUnload() {
