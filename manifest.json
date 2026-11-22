@@ -1,0 +1,8 @@
+{
+  "name": "ForgottenRoom",
+  "description": "A hidden Deltarune egg room that sometimes appears when you switch channels. Take the egg, get a hint to the next room.",
+  "authors": [{ "name": "you" }],
+  "main": "index.js",
+  "hash": "1",
+  "vendetta": { "icon": "ic_message_edit" }
+}
